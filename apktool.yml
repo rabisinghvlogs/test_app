@@ -1,0 +1,24 @@
+version: 2.11.1
+apkFileName: test_app.apk
+isFrameworkApk: false
+usesFramework:
+  ids:
+  - 1
+  tag: null
+sdkInfo:
+  minSdkVersion: 21
+  targetSdkVersion: 35
+packageInfo:
+  forcedPackageId: 127
+  renameManifestPackage: null
+versionInfo:
+  versionCode: 1
+  versionName: 1.0.0
+sharedLibrary: false
+sparseResources: false
+compactEntries: false
+doNotCompress:
+- arsc
+- png
+- assets/dexopt/baseline.prof
+- assets/dexopt/baseline.profm
