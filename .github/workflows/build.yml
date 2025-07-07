@@ -1,0 +1,83 @@
+name: Sign Decompiled APK
+
+on:
+  push:
+    paths:
+      - '**'  # Trigger on any file changes
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout code
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # 2. Setup Java
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: 17
+
+      # 3. Install apktool, zipalign, apksigner
+      - name: Install apktool and tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget zipalign apksigner
+          wget https://raw.githubusercontent.com/iBotPeaches/Apktool/master/scripts/linux/apktool -O apktool
+          wget https://bitbucket.org/iBotPeaches/apktool/downloads/apktool_2.9.3.jar -O apktool.jar
+          chmod +x apktool
+          sudo mv apktool apktool.jar /usr/local/bin/
+
+      # 4. Inject raw config.json directly
+      - name: Inject config.json
+        run: |
+          mkdir -p assets/flutter_assets/assets
+          cat <<EOF > assets/flutter_assets/assets/config.json
+          {
+            "splashTitle": "Welcome to",
+            "splashSubtitle": "Neshop Online Shopping",
+            "splashDescription": "Appvly is a one-click website to app converter.",
+            "splashDuration": 3
+          }
+          EOF
+
+      # 5. Rebuild APK
+      - name: Rebuild APK
+        run: |
+          apktool b . -o unsigned.apk
+
+      # 6. Zipalign
+      - name: Zipalign APK
+        run: |
+          zipalign -p -f 4 unsigned.apk aligned.apk
+
+      # 7. Decode Keystore from base64 secret
+      - name: Decode Keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_B64 }}" | base64 -d > appvly.jks
+
+      # 8. Sign APK using provided secrets
+      - name: Sign APK
+        run: |
+          apksigner sign \
+            --ks appvly.jks \
+            --ks-key-alias ${{ secrets.KEY_ALIAS }} \
+            --ks-pass pass:${{ secrets.KEYSTORE_PASS }} \
+            --key-pass pass:${{ secrets.KEY_PASS }} \
+            --out final.apk \
+            aligned.apk
+
+      # 9. Verify signature
+      - name: Verify APK Signature
+        run: |
+          apksigner verify final.apk
+
+      # 10. Upload signed APK
+      - name: Upload Final APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: signed_appvly_apk
+          path: final.apk
