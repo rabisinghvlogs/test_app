@@ -24,16 +24,21 @@ jobs:
       - name: Install apktool and tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y wget zipalign apksigner
+          sudo apt-get install -y wget zipalign apksigner jq
           wget https://raw.githubusercontent.com/iBotPeaches/Apktool/master/scripts/linux/apktool -O apktool
           wget https://bitbucket.org/iBotPeaches/apktool/downloads/apktool_2.9.3.jar -O apktool.jar
           chmod +x apktool
           sudo mv apktool apktool.jar /usr/local/bin/
 
-      - name: Inject config.json
+      - name: Inject and extract appID from config.json
+        id: config
         run: |
           mkdir -p assets/flutter_assets/assets
           echo "${{ github.event.inputs.config_b64 }}" | base64 -d > assets/flutter_assets/assets/config.json
+          
+          # Extract appID
+          app_id=$(jq '.appID' assets/flutter_assets/assets/config.json)
+          echo "APP_ID=$app_id" >> $GITHUB_ENV
 
       - name: Rebuild APK
         run: |
@@ -61,14 +66,9 @@ jobs:
         run: |
           apksigner verify final.apk
 
-      - name: Upload APK to PHP Server
+      - name: Upload APK to your PHP server
         run: |
           curl -X POST https://letmedebug.rabi.info.np/upload.php \
             -F "file=@final.apk" \
-            -F "token=${{ secrets.UPLOAD_TOKEN }}"
-
-      - name: Upload to GitHub Artifact (optional backup)
-        uses: actions/upload-artifact@v4
-        with:
-          name: signed_appvly_apk
-          path: final.apk
+            -F "token=${{ secrets.UPLOAD_TOKEN }}" \
+            -F "appID=$APP_ID"
