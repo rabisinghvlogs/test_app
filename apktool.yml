@@ -1,5 +1,5 @@
 version: 2.11.1
-apkFileName: test_app.apk
+apkFileName: app-release.apk
 isFrameworkApk: false
 usesFramework:
   ids:
