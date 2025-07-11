@@ -87,7 +87,7 @@ jobs:
 
       - name: Upload APK to your PHP server
         run: |
-          curl -X POST https://letmedebug.rabi.info.np/upload.php \
+          curl -X POST http://dev.rabi.info.np/api/upload \
             -F "file=@final.apk" \
             -F "token=${{ secrets.UPLOAD_TOKEN }}" \
             -F "appID=$APP_ID"
